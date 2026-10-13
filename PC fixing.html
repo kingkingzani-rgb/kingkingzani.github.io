@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a000a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pumpkin Fix — AI PC Repair</title>
+<style>
+:root{
+  --bg-deep:#0a000a;
+  --bg-purple:#1a0b1a;
+  --pumpkin:#ff6b00;
+  --pumpkin-light:#ff9d4d;
+  --toxic:#39ff14;
+  --ghost:#a855f7;
+  --bone:#f3f4f6;
+  --glass:rgba(26,11,26,.75);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+body{font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif;background:var(--bg-deep);color:var(--bone);-webkit-font-smoothing:antialiased}
+
+/* ═══════════ HALLOWEEN CURSOR & TRAIL ═══════════ */
+@media (pointer: fine) {
+  * { cursor: none !important; }
+  .cursor-main {
+    position: fixed; width: 36px; height: 36px;
+    pointer-events: none; z-index: 99999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease-out, filter 0.2s ease-out;
+    filter: drop-shadow(0 0 12px rgba(255, 107, 0, 0.9));
+  }
+  .cursor-main.hovering {
+    transform: translate(-50%, -50%) scale(1.4);
+    filter: drop-shadow(0 0 18px rgba(57, 255, 20, 0.9));
+  }
+  .cursor-trail {
+    position: fixed; border-radius: 50%;
+    pointer-events: none; z-index: 99998;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ═══════════ ANIME HALLOWEEN BACKGROUND (NO FLICKER) ═══════════ */
+#bgWrap{position:fixed;inset:0;z-index:-4;overflow:hidden;background:#0a001a}
+.anime-sky{position:absolute;inset:0;background:linear-gradient(to bottom, #0a001a 0%, #1a0033 30%, #2d0a3e 60%, #4a0e1c 100%)}
+.moon{position:absolute;top:15%;right:20%;width:120px;height:120px;border-radius:50%;background:#ffedb3;box-shadow:0 0 40px #ffedb3, 0 0 80px #ff9d4d;z-index:1}
+.moon::after{content:"";position:absolute;top:-10px;left:-15px;width:120px;height:120px;border-radius:50%;background:#0a001a;z-index:2}
+.stars{position:absolute;inset:0;z-index:0;background-image:radial-gradient(2px 2px at 10% 20%, #fff, transparent),radial-gradient(2px 2px at 40% 10%, #ffedb3, transparent),radial-gradient(1px 1px at 70% 30%, #fff, transparent),radial-gradient(2px 2px at 85% 15%, #ff9d4d, transparent),radial-gradient(1px 1px at 25% 50%, #fff, transparent),radial-gradient(2px 2px at 60% 70%, #a855f7, transparent),radial-gradient(1px 1px at 90% 80%, #fff, transparent),radial-gradient(2px 2px at 15% 85%, #ffedb3, transparent);opacity:0.6}
+.hills{position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top, #0a000a 0%, #1a0b1a 50%, transparent 100%);border-radius:50% 50% 0 0 / 20% 20% 0 0;z-index:2;box-shadow:0 -20px 50px rgba(168,85,247,0.2)}
+.hills::before{content:"";position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(to top, #0a000a 0%, transparent 100%);border-radius:50% 50% 0 0 / 30% 30% 0 0}
+.bg-tint{position:fixed;inset:0;z-index:-3;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,rgba(255,107,0,.15),transparent 60%),linear-gradient(180deg,rgba(10,0,10,.8) 0%,rgba(10,0,10,.2) 40%,rgba(10,0,10,.95) 100%)}
+
+/* ═══════════ HALLOWEEN MUSIC TOGGLE ═══════════ */
+.music-toggle{position:fixed;top:calc(var(--safe-top) + 14px);right:calc(var(--safe-r) + 14px);z-index:200;width:44px;height:44px;border-radius:50%;background:rgba(26,11,26,.85);border:2px solid var(--pumpkin);color:var(--pumpkin);font-size:1.2rem;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 15px rgba(255,107,0,.5);transition:all .2s;backdrop-filter:blur(10px)}
+.music-toggle:hover{transform:scale(1.1);box-shadow:0 0 25px rgba(255,107,0,.8)}
+.music-toggle.playing{background:var(--pumpkin);color:#0a000a;border-color:var(--pumpkin-light);box-shadow:0 0 25px var(--pumpkin)}
+.music-toggle .icon{pointer-events:none}
+
+/* ═══════════ TOP BAR & LOGO ═══════════ */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;padding:calc(var(--safe-top) + 12px) calc(var(--safe-r) + 64px) 12px calc(var(--safe-l) + 14px);display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,rgba(10,0,10,.98),rgba(10,0,10,.6) 70%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.brand{display:flex;align-items:center;gap:8px;flex-shrink:0;font-weight:900;font-size:1.05rem;letter-spacing:.12em;text-transform:uppercase;filter:drop-shadow(0 0 10px rgba(255,107,0,.8))}
+.brand .icon{font-size:1.4rem;}
+.brand span{background:linear-gradient(92deg,var(--pumpkin),var(--ghost));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.searchwrap{flex:1;min-width:0}
+.searchbar{display:flex;align-items:center;gap:6px;background:var(--glass);border:1px solid rgba(255,107,0,.4);border-radius:999px;padding:3px 3px 3px 15px;box-shadow:0 6px 28px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,107,0,.1);transition:border-color .22s,box-shadow .22s}
+.searchbar:focus-within{border-color:var(--pumpkin);box-shadow:0 0 0 3px rgba(255,107,0,.2),0 6px 32px rgba(0,0,0,.7)}
+.searchbar input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--bone);font-size:16px;font-family:inherit;padding:10px 0}
+.searchbar input::placeholder{color:rgba(243,244,246,.4);font-size:.9rem}
+.searchbar button{border:0;cursor:pointer;font-family:inherit;font-weight:900;font-size:.82rem;letter-spacing:.06em;padding:10px 18px;border-radius:999px;color:#0a000a;flex-shrink:0;background:linear-gradient(135deg,var(--pumpkin-light),var(--pumpkin));transition:transform .16s;min-height:40px;box-shadow:0 0 15px rgba(255,107,0,.5)}
+.searchbar button:active{transform:scale(.94)}
+.searchbar button:disabled{opacity:.5;cursor:wait}
+
+/* ═══════════ CHIPS ═══════════ */
+.chipbar{position:fixed;left:0;right:0;z-index:99;top:calc(var(--safe-top) + 66px);display:flex;gap:7px;padding:4px calc(var(--safe-r) + 14px) 8px calc(var(--safe-l) + 14px);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;--webkit-mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.chipbar::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;cursor:pointer;padding:8px 14px;border-radius:999px;font-size:.76rem;font-weight:700;background:rgba(26,11,26,.85);border:1px solid rgba(168,85,247,.3);color:rgba(243,244,246,.9);white-space:nowrap;transition:all .2s;backdrop-filter:blur(8px);min-height:34px}
+.chip:active{transform:scale(.94);background:rgba(57,255,20,.2);border-color:var(--toxic);color:var(--toxic)}
+
+/* ═══════════ FEED ═══════════ */
+.feed{height:100dvh;height:100vh;height:100dvh;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-y:contain;touch-action:pan-y}
+.feed::-webkit-scrollbar{display:none}
+@supports not (height:100dvh){.feed{height:100vh}}
+.reel{position:relative;height:100dvh;height:100vh;height:100dvh;width:100%;scroll-snap-align:start;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;overflow:hidden}
+@supports not (height:100dvh){.reel{height:100vh}}
+
+.media{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
+.media iframe{width:100%;height:100%;border:0;object-fit:cover}
+.poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(4px) brightness(.3) saturate(.6);transform:scale(1.1);transition:opacity .35s}
+.media::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(10,0,10,.6) 0%,transparent 24%,transparent 44%,rgba(10,0,10,.95) 100%)}
+.spinner{position:absolute;width:42px;height:42px;border-radius:50%;border:3px solid rgba(255,107,0,.2);border-top-color:var(--pumpkin);animation:spin .9s linear infinite;z-index:3}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.play-overlay{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-decoration:none;color:var(--bone);background:radial-gradient(ellipse at center,rgba(74,14,28,.4),rgba(10,0,10,.85));transition:background .25s}
+.play-overlay:active{background:radial-gradient(ellipse at center,rgba(255,107,0,.4),rgba(10,0,10,.9))}
+.play-overlay .play-btn{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--pumpkin-light),var(--pumpkin));color:#0a000a;font-size:2.2rem;box-shadow:0 12px 44px rgba(255,107,0,.6),0 0 0 8px rgba(255,107,0,.15);}
+.play-overlay .play-lbl{font-size:.72rem;letter-spacing:.16em;font-weight:900;color:var(--pumpkin);text-transform:uppercase;padding:8px 16px;border-radius:999px;background:rgba(10,0,10,.8);border:1px solid rgba(255,107,0,.5);backdrop-filter:blur(8px)}
+
+.embed-warn{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);display:none;flex-direction:column;align-items:center;gap:12px;padding:20px 24px;border-radius:16px;background:rgba(10,0,10,.95);border:1px solid var(--toxic);font-size:.85rem;text-align:center;color:var(--bone);max-width:min(340px,85vw);backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.9),0 0 20px rgba(57,255,20,.2)}
+.embed-warn.show{display:flex}
+.embed-warn a{color:#0a000a;font-weight:900;text-decoration:none;padding:10px 20px;border-radius:999px;background:linear-gradient(135deg,var(--toxic),#2dd40c);border:none;font-size:.8rem;transition:transform .18s;box-shadow:0 0 15px rgba(57,255,20,.5)}
+.embed-warn a:active{transform:scale(.95)}
+
+.info{position:absolute;z-index:5;left:calc(var(--safe-l) + 16px);right:calc(var(--safe-r) + 84px);bottom:calc(var(--safe-bot) + 28px);animation:rise .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.info .badge{display:inline-block;font-size:.62rem;font-weight:900;letter-spacing:.14em;padding:4px 10px;border-radius:999px;margin-bottom:9px;background:rgba(255,107,0,.2);color:var(--pumpkin);border:1px solid rgba(255,107,0,.5);backdrop-filter:blur(6px)}
+.info h2{font-size:clamp(1rem,4.4vw,1.5rem);font-weight:900;line-height:1.24;margin-bottom:6px;text-shadow:0 2px 16px rgba(0,0,0,.9);display:-webkit-box;--webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.info .meta{font-size:.76rem;color:rgba(243,244,246,.7);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.info .meta b{color:var(--ghost);font-weight:700}
+
+.rail{position:absolute;z-index:6;right:calc(var(--safe-r) + 8px);bottom:calc(var(--safe-bot) + 30px);display:flex;flex-direction:column;gap:18px;align-items:center}
+.rail button,.rail a{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,.4);color:var(--bone);font-size:1.22rem;cursor:pointer;text-decoration:none;transition:transform .18s,background .18s,border-color .18s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.rail button:active,.rail a:active{transform:scale(.9)}
+.rail button.on{background:rgba(255,107,0,.9);border-color:var(--pumpkin);box-shadow:0 0 15px rgba(255,107,0,.6)}
+.rail .lbl{font-size:.58rem;opacity:.7;margin-top:-14px;letter-spacing:.05em;color:var(--ghost)}
+
+.summary-reel{align-items:flex-start;padding:calc(var(--safe-top) + 118px) calc(var(--safe-r) + 14px) calc(var(--safe-bot) + 34px) calc(var(--safe-l) + 14px);overflow-y:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.summary-reel::-webkit-scrollbar{display:none}
+.summary-card{width:min(720px,100%);margin:0 auto;background:linear-gradient(155deg,rgba(26,11,26,.95),rgba(10,0,10,.98));border:1px solid rgba(255,107,0,.4);border-radius:20px;padding:24px 20px 30px;box-shadow:0 24px 70px rgba(0,0,0,.8),inset 0 1px 0 rgba(168,85,247,.15),0 0 30px rgba(255,107,0,.1);backdrop-filter:blur(20px);animation:rise .55s cubic-bezier(.16,1,.3,1) both}
+.summary-card .eyebrow{font-size:.62rem;font-weight:900;letter-spacing:.2em;color:var(--pumpkin);margin-bottom:11px;text-shadow:0 0 10px rgba(255,107,0,.5)}
+.summary-card h1{font-size:clamp(1.18rem,4.6vw,1.75rem);font-weight:900;line-height:1.26;margin-bottom:18px;background:linear-gradient(94deg,var(--bone),var(--ghost));-webkit-background-clip:text;background-clip:text;color:transparent}
+.md{font-size:.92rem;line-height:1.72;color:rgba(243,244,246,.95)}
+.md h3{font-size:.98rem;font-weight:900;color:var(--toxic);margin:22px 0 9px;letter-spacing:.02em;padding-bottom:6px;border-bottom:1px solid rgba(57,255,20,.3)}
+.md h3:first-child{margin-top:0}
+.md strong{color:var(--pumpkin);font-weight:900}
+.md ul,.md ol{padding-left:20px;margin:8px 0}
+.md li{margin-bottom:7px}
+.md ol li::marker{color:var(--toxic);font-weight:900}
+.md ul li::marker{color:var(--pumpkin)}
+.md code{background:rgba(168,85,247,.2);padding:2px 6px;border-radius:5px;font-family:ui-monospace,Menlo,monospace;font-size:.85em;color:var(--toxic);border:1px solid rgba(57,255,20,.3);word-break:break-word}
+.md p{margin-bottom:10px}
+.scroll-hint{text-align:center;margin-top:26px;font-size:.72rem;color:rgba(255,107,0,.6);letter-spacing:.1em;}
+
+.loader-reel{flex-direction:column;gap:20px}
+.loader-reel p{letter-spacing:.12em;font-size:.72rem;color:var(--pumpkin);font-weight:900;text-align:center;padding:0 20px;text-shadow:0 0 10px rgba(255,107,0,.5)}
+.empty{text-align:center;max-width:420px;padding:0 24px}
+.empty .ico{font-size:2.8rem;margin-bottom:14px;opacity:.7;filter:drop-shadow(0 0 15px rgba(255,107,0,.5))}
+.empty h2{font-size:1.1rem;margin-bottom:8px;color:var(--ghost)}
+.empty p{font-size:.84rem;color:rgba(243,244,246,.6);line-height:1.6}
+
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:96;display:none;padding:10px calc(var(--safe-r) + 14px) calc(var(--safe-bot) + 8px) calc(var(--safe-l) + 14px);background:linear-gradient(0deg,rgba(10,0,10,.98),rgba(26,11,26,.85) 70%,transparent);backdrop-filter:blur(16px);justify-content:space-around;align-items:center;border-top:1px solid rgba(255,107,0,.2)}
+.bottom-nav button{background:none;border:0;color:rgba(243,244,246,.5);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.65rem;letter-spacing:.08em;font-weight:900;padding:8px 14px;cursor:pointer;font-family:inherit;transition:color .2s,transform .18s;min-width:64px;min-height:52px;border-radius:12px}
+.bottom-nav button:active{transform:scale(.9)}
+.bottom-nav button .ic{font-size:1.4rem;line-height:1;filter:drop-shadow(0 0 5px transparent);transition:filter .2s}
+.bottom-nav button.active{color:var(--pumpkin);text-shadow:0 0 15px rgba(255,107,0,.8)}
+.bottom-nav button.active .ic{filter:drop-shadow(0 0 8px rgba(255,107,0,.8))}
+
+.dots{position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:98;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.dots i{width:4px;height:4px;border-radius:50%;background:rgba(255,107,0,.3);transition:all .3s}
+.dots i.on{background:var(--pumpkin);height:16px;border-radius:2px;box-shadow:0 0 10px rgba(255,107,0,.8)}
+
+.tap-pause{position:absolute;inset:0;z-index:4;display:none;place-items:center;pointer-events:none}
+.tap-pause.on{display:grid}
+.tap-pause div{font-size:3.4rem;opacity:.85;filter:drop-shadow(0 4px 20px rgba(0,0,0,.9));animation:popIn .28s cubic-bezier(.16,1,.3,1)}
+@keyframes popIn{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:.85}}
+.heart-burst{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(0);font-size:6rem;z-index:5;pointer-events:none;filter:drop-shadow(0 0 24px rgba(255,107,0,.9))}
+.heart-burst.go{animation:heartPop .8s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes heartPop{0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg);opacity:0}35%{transform:translate(-50%,-50%) scale(1.25) rotate(8deg);opacity:1}70%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+
+@media(max-width:768px){
+  .brand{font-size:.85rem}.brand .icon{font-size:1.2rem}
+  .info{right:calc(var(--safe-r) + 74px)}
+  .rail button,.rail a{width:48px;height:48px;font-size:1.08rem}
+  .rail{gap:15px}
+  .summary-reel{padding-top:calc(var(--safe-top) + 116px)}
+  .summary-card{padding:20px 16px 26px;border-radius:16px}
+  .md{font-size:.88rem;line-height:1.68}
+  .bottom-nav{display:flex}
+  .info{bottom:calc(var(--safe-bot) + 78px)}
+  .rail{bottom:calc(var(--safe-bot) + 80px)}
+  .play-overlay .play-btn{width:74px;height:74px;font-size:1.9rem}
+  .music-toggle{width:40px;height:40px;font-size:1rem}
+}
+@media(max-width:380px){.searchbar button{padding:9px 14px;font-size:.76rem}.rail button,.rail a{width:44px;height:44px;font-size:1rem}.info h2{font-size:.98rem}.bottom-nav button{min-width:50px;padding:6px 8px}.bottom-nav button .ic{font-size:1.2rem}}
+@media(max-height:500px) and (orientation:landscape){.info h2{--webkit-line-clamp:2}.info{bottom:14px}.rail{bottom:16px;flex-direction:row;top:50%;transform:translateY(-50%);right:14px}.rail .lbl{display:none}.bottom-nav{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- HALLOWEEN MUSIC PLAYER -->
+<audio id="bgMusic" loop>
+  <!-- PUT YOUR HALLOWEEN MUSIC FILE HERE (e.g., halloween-music.mp3) -->
+  <source src="https://conservative-lavender-z4ytytuq.edgeone.dev" type="audio/mpeg">
+</audio>
+<button class="music-toggle" id="musicToggle" title="Toggle Halloween Music">
+  <span class="icon">🔇</span>
+</button>
+
+<!-- HALLOWEEN CURSOR -->
+<div class="cursor-main" id="cursorMain">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C10 2 9 3 9 5V6C9 7 8 8 6 8C3 8 2 10 2 13C2 18 6 22 12 22C18 22 22 18 22 13C22 10 21 8 18 8C16 8 15 7 15 6V5C15 3 14 2 12 2Z" fill="#ff6b00"/>
+    <path d="M12 2V5" stroke="#39ff14" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="9" cy="13" r="1.5" fill="#0a000a"/>
+    <circle cx="15" cy="13" r="1.5" fill="#0a000a"/>
+    <path d="M9 17L10 18L11 17L12 18L13 17L14 18L15 17" stroke="#0a000a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<!-- ANIME HALLOWEEN BACKGROUND -->
+<div id="bgWrap">
+  <div class="anime-sky"></div>
+  <div class="stars"></div>
+  <div class="moon"></div>
+  <div class="hills"></div>
+</div>
+<div class="bg-tint"></div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="icon">🎃</div>
+    <span>PUMPKIN FIX</span>
+  </div>
+  <div class="searchwrap">
+    <form class="searchbar" id="searchForm">
+      <input id="q" type="search" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Ask about a PC problem…">
+      <button type="submit" id="goBtn">SEARCH</button>
+    </form>
+  </div>
+</div>
+
+<div class="chipbar">
+  <div class="chip">PC overheating</div>
+  <div class="chip">Slow Windows 11</div>
+  <div class="chip">Blue screen BSOD</div>
+  <div class="chip">Boost gaming FPS</div>
+  <div class="chip">SSD not detected</div>
+  <div class="chip">Loud fan noise</div>
+  <div class="chip">Remove malware</div>
+  <div class="chip">Fast boot time</div>
+</div>
+
+<main class="feed" id="feed">
+  <section class="reel empty">
+    <div class="empty">
+      <div class="ico">🎃</div>
+      <h2>Search a PC problem to begin</h2>
+      <p>Get a detailed AI repair guide plus spooky videos you can swipe through.</p>
+    </div>
+  </section>
+</main>
+
+<div class="dots" id="dots"></div>
+
+<nav class="bottom-nav">
+  <button class="active" data-nav="home"><span class="ic">🏚️</span>Home</button>
+  <button data-nav="trending"><span class="ic">🦇</span>Trending</button>
+  <button data-nav="search"><span class="ic">🕷️</span>Search</button>
+  <button data-nav="saved"><span class="ic">🕸️</span>Saved</button>
+</nav>
+
+<script>
+/* ═══════════ HALLOWEEN MUSIC LOGIC ═══════════ */
+const musicToggle = document.getElementById('musicToggle');
+const bgMusic = document.getElementById('bgMusic');
+let musicPlaying = false;
+
+musicToggle.addEventListener('click', () => {
+  if (musicPlaying) {
+    bgMusic.pause();
+    musicToggle.querySelector('.icon').textContent = '🔇';
+    musicToggle.classList.remove('playing');
+  } else {
+    bgMusic.play().catch(e => console.log("Audio play failed:", e));
+    musicToggle.querySelector('.icon').textContent = '🎵';
+    musicToggle.classList.add('playing');
+  }
+  musicPlaying = !musicPlaying;
+});
+
+/* ═══════════ HALLOWEEN CURSOR LOGIC ═══════════ */
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.matchMedia("(pointer: coarse)").matches) return;
+
+  const cursor = document.getElementById('cursorMain');
+  const trailCount = 12;
+  const trails = [];
+
+  for (let i = 0; i < trailCount; i++) {
+    const t = document.createElement('div');
+    t.className = 'cursor-trail';
+    const size = 10 - (i * 0.6);
+    t.style.width = `${size}px`;
+    t.style.height = `${size}px`;
+    t.style.opacity = 1 - (i / trailCount);
+    
+    if (i % 2 === 0) {
+      t.style.background = '#ff6b00';
+      t.style.filter = 'drop-shadow(0 0 6px #ff6b00)';
+    } else {
+      t.style.background = '#a855f7';
+      t.style.filter = 'drop-shadow(0 0 6px #a855f7)';
+    }
+    document.body.appendChild(t);
+    trails.push({ el: t, x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  }
+
+  let mouseX = window.innerWidth / 2;
+  let mouseY = window.innerHeight / 2;
+
+  document.addEventListener("mousemove", (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    cursor.style.left = `${mouseX}px`;
+    cursor.style.top = `${mouseY}px`;
+  });
+
+  function animateTrail() {
+    let x = mouseX;
+    let y = mouseY;
+    
+    trails.forEach((t) => {
+      t.x += (x - t.x) * 0.25;
+      t.y += (y - t.y) * 0.25;
+      t.el.style.left = `${t.x}px`;
+      t.el.style.top = `${t.y}px`;
+      
+      x = t.x;
+      y = t.y;
+    });
+    
+    requestAnimationFrame(animateTrail);
+  }
+  animateTrail();
+
+  const clickables = document.querySelectorAll('a, button, input, .chip, .rail button, .bottom-nav button, .music-toggle');
+  clickables.forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+  });
+});
+
+/* ═══════════ PC KNOWLEDGE BASE ═══════════ */
+const DOCS = [
+{t:"Fix PC Overheating",k:"overheating overheat hot temperature thermal throttling shutdown random fans loud cpu gpu temp 85c 90c paste dust airflow undervolt",
+ x:"Symptoms: random shutdowns, loud fans, thermal throttling, temps above 85C.\nStep 1: Power off and unplug. Open the side panel. Use compressed air to clear dust from CPU cooler fins, GPU fans, PSU intake and case filters. Hold fans still while blowing so they do not spin.\nStep 2: If temps stay high after cleaning, remove the CPU cooler, clean old paste with 99% isopropyl alcohol, apply a pea-sized dot of new paste, reseat the cooler evenly in a diagonal pattern.\nStep 3: Verify all case fans spin and that airflow goes front-to-back.\nStep 4: Undervolt the CPU with Intel XTU or ThrottleStop for a 10-15C drop."},
+{t:"Speed Up Slow Windows 11",k:"slow windows 11 speed up performance lag sluggish startup apps background storage sense disk cleanup visual effects power plan drivers sysmain ssd sfc dism",
+ x:"Disable startup bloat: Task Manager, Startup tab.\nTurn off background apps: Settings, Privacy, Background apps.\nEnable Storage Sense and run Disk Cleanup.\nDisable visual effects: System Properties, Advanced, Performance Settings.\nSet power plan to High Performance.\nUpdate GPU drivers from the vendor site.\nDisable SysMain only if you have an SSD.\nRun sfc /scannow and DISM /Online /Cleanup-Image /RestoreHealth."},
+{t:"Fix Blue Screen BSOD",k:"blue screen bsod crash stop code irql memory management whea page fault ram memtest driver minidump xmp",
+ x:"Note the stop code. IRQL_NOT_LESS_OR_EQUAL and PAGE_FAULT_IN_NONPAGED_AREA mean faulty RAM or bad driver. MEMORY_MANAGEMENT means RAM.\nStep 1: Test RAM with MemTest86, 4+ passes, one stick at a time.\nStep 2: Check disk health with CrystalDiskInfo.\nStep 3: Boot Safe Mode and roll back recent driver.\nStep 4: Run Driver Verifier.\nStep 5: Disable XMP in BIOS.\nStep 6: Read minidumps in C:/Windows/Minidump with WhoCrashed."},
+{t:"Optimize GPU Performance",k:"gpu graphics card performance nvidia amd radeon geforce fps gaming ddu driver resizable bar hags undervolt msi afterburner coil whine",
+ x:"Update to the latest driver from NVIDIA, AMD or Intel directly.\nUse DDU in Safe Mode for a clean install.\nIn NVIDIA Control Panel set Power Management to Prefer Maximum Performance, Low Latency to Ultra, disable V-Sync.\nEnable Resizable BAR in BIOS.\nEnable Hardware-Accelerated GPU Scheduling in Windows Settings.\nCap frame rate 3-5 fps below refresh rate.\nMonitor temps with HWiNFO64, keep GPU under 83C.\nUndervolt with MSI Afterburner curve editor."},
+{t:"Fix Random Crashes and Freezes",k:"random crash freeze reboot restart psu power supply event viewer kernel-power whea overclock xmp bios ram memtest",
+ x:"Rule out power: aging PSU causes random reboots under load. Check 12V rail in BIOS.\nReseat RAM and GPU. Test with one RAM stick.\nRun OCCT power test 10 minutes.\nCheck Event Viewer for Kernel-Power Event ID 41.\nDisable any overclock including XMP.\nUpdate BIOS.\nCheck for swollen capacitors.\nRun MemTest86 overnight."},
+{t:"Remove Malware and Bloatware",k:"malware virus bloatware adware spyware hijacker popup browser extension malwarebytes adwcleaner hitmanpro safe mode hosts",
+ x:"Boot into Safe Mode with Networking.\nRun Malwarebytes full scan, then AdwCleaner, then HitmanPro.\nCheck browser extensions, remove unknown.\nReset browser settings.\nCheck Task Scheduler for suspicious entries.\nRemove unwanted programs from Apps and Features.\nRun Windows Defender offline scan.\nCheck hosts file at C:/Windows/System32/drivers/etc/hosts.\nCreate a new user profile if hijacker persists."},
+{t:"Fix SSD Not Detected or Slow SSD",k:"ssd nvme m2 not detected slow bios ahci disk management trim firmware crystaldiskinfo samsung magician crucial full",
+ x:"Check BIOS, enable AHCI not IDE.\nFor NVMe, make sure the M.2 slot is not sharing lanes with SATA ports.\nUpdate motherboard BIOS.\nOpen Disk Management and check if the drive shows as unallocated.\nCheck CrystalDiskInfo for health and reallocated sectors.\nEnable TRIM: fsutil behavior set DisableDeleteNotify 0.\nDo not defragment an SSD.\nUpdate SSD firmware with Samsung Magician or Crucial Storage Executive.\nKeep the SSD under 90 percent full."},
+{t:"Fix No Boot / Black Screen",k:"no boot black screen no display no post beep code q-led clear cmos reseat ram gpu psu paperclip startup repair",
+ x:"Check power cable, PSU switch, monitor input.\nListen for beep codes or check Q-LED.\nReseat RAM, try one stick in slot 2.\nReseat GPU and power connectors.\nClear CMOS.\nTry booting with only CPU, one RAM stick and no GPU.\nCheck CPU 8-pin and 24-pin are fully seated.\nTest PSU with a paperclip test.\nBoot from Windows USB and run startup repair."},
+{t:"Improve Gaming FPS",k:"fps gaming performance boost lag stutter game mode fullscreen dlss fsr dual channel ram refresh rate xbox game bar shadows",
+ x:"Enable Game Mode in Windows Settings.\nSet the game to Fullscreen Exclusive not Borderless.\nDisable Xbox Game Bar and Game DVR.\nClose browsers and overlays.\nSet the game exe to High priority in Task Manager.\nUpdate GPU drivers.\nSet Texture Filtering Quality to Performance.\nEnable DLSS or FSR.\nReduce shadows and volumetric fog first.\nSet monitor to max refresh rate.\nRun RAM in dual channel."},
+{t:"Optimize Boot Time",k:"boot time slow startup fast startup fast boot uefi gpt legacy msconfig post bios timeout",
+ x:"Enable Fast Startup in Power Options.\nDisable unused startup apps.\nIn BIOS enable Fast Boot, disable full POST memory testing.\nConvert boot drive to GPT and enable UEFI boot.\nDisable unused onboard devices in BIOS.\nSet boot order to only the OS drive.\nRun msconfig and set Boot timeout to 3 seconds.\nCheck Event Viewer for slow boot causes."},
+{t:"Fix Fan Noise",k:"fan noise loud noisy buzzing rattle coil whine pwm fluid dynamic bearing fan curve bios fan control undervolt repaste",
+ x:"Identify which fan is loud. Stop fans one at a time with a finger to isolate.\nClean all dust.\nSet a custom fan curve in BIOS.\nReplace worn sleeve-bearing fans with PWM fluid dynamic bearing.\nCheck for cable hitting a fan blade.\nCoil whine is electrical, reduce by capping FPS or changing the PSU.\nRepaste the GPU if fans ramp up under light load.\nUndervolt the CPU and GPU."},
+{t:"Fix Laptop Battery Draining Fast",k:"laptop battery drain fast powercfg batteryreport health balanced power efficiency brightness bluetooth wifi hibernate sleep refresh rate",
+ x:"Run powercfg /batteryreport to see design vs full charge capacity. Replace if under 80 percent health.\nSet power mode to Balanced or Best Power Efficiency.\nLower screen brightness. Disable keyboard backlight.\nTurn off Bluetooth and Wi-Fi when not needed.\nCheck Task Manager for high-power apps.\nReduce refresh rate from 120Hz to 60Hz.\nUse hibernate instead of sleep.\nLimit charge to 80 percent in vendor utility."},
+{t:"Clean Up Disk Space",k:"disk space full cleanup cleanmgr storage sense windirstat treesize hibernation pagefile recycle bin compact os steam",
+ x:"Run Disk Cleanup as admin, clean system files.\nEnable Storage Sense.\nDelete old Windows installations with cleanmgr.\nMove large files with WinDirStat or TreeSize.\nDisable hibernation: powercfg /h off.\nClear browser caches. Empty Recycle Bin.\nMove page file to another drive.\nUninstall unused Steam games.\nUse Compact OS: compact /compactos:always."},
+{t:"Fix Windows Update Errors",k:"windows update error failed stuck wuauserv cryptsvc bits msiserver softwaredistribution catroot2 sfc dism",
+ x:"Run the built-in troubleshooter.\nIn Command Prompt as admin: net stop wuauserv, net stop cryptSvc, net stop bits, net stop msiserver.\nRename C:/Windows/SoftwareDistribution to SoftwareDistribution.old.\nRename C:/Windows/System32/catroot2 to catroot2.old.\nRestart services with net start.\nRun sfc /scannow and DISM /Online /Cleanup-Image /RestoreHealth.\nCheck date and time. Check free space, updates need 20GB."},
+];
+
+/* ═══════════ CLIENT-SIDE SEARCH ═══════════ */
+function tokenize(s){return (s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>2);}
+function searchDocs(query, k=3){
+  const qt = tokenize(query);
+  if (!qt.length) return DOCS.slice(0,k);
+  const scored = DOCS.map(d => {
+    const docTokens = tokenize(d.t + " " + d.k + " " + d.x);
+    const docSet = new Set(docTokens);
+    let score = 0;
+    for (const w of qt){
+      if (docSet.has(w)) score += 3;
+      for (const dw of docSet) if (dw.startsWith(w) || w.startsWith(dw)) score += 0.4;
+    }
+    const title = d.t.toLowerCase();
+    for (const w of qt) if (title.includes(w)) score += 5;
+    return {d, score};
+  });
+  scored.sort((a,b)=>b.score-a.score);
+  return scored.slice(0,k).map(s=>s.d);
+}
+
+/* ═══════════ AI SUMMARY ═══════════ */
+async function aiSummarize(query, hits){
+  const ctx = hits.map(d => `### ${d.t}\n${d.x}`).join("\n\n");
+  const prompt = `You are a senior PC repair and optimization technician.
+
+The user searched: "${query}"
+
+Knowledge base excerpts:
+${ctx}
+
+Write a DETAILED, practical answer using these sections:
+**What's likely causing it** — 2-4 bullet points
+**Step-by-step fix** — numbered steps, be specific with tool names and settings paths
+**Optimization tips** — how to prevent it recurring
+**When to replace hardware** — only if relevant
+
+Be technical but readable. No fluff. Use markdown.`;
+  const res = await fetch("https://text.pollinations.ai/openai", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({model:"openai", messages:[{role:"user", content:prompt}]})
+  });
+  if (!res.ok) throw new Error("AI service unavailable");
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "Could not generate summary.";
+}
+
+/* ═══════════ VIDEO SEARCH — Real IDs only, else search links ═══════════ */
+async function searchVideos(query){
+  const q = query + " PC fix tutorial";
+  const instances = [
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.adminforge.de",
+    "https://api.piped.private.coffee",
+    "https://pipedapi.leptons.xyz"
+  ];
+
+  for (const base of instances){
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(()=>controller.abort(), 5000);
+      const r = await fetch(`${base}/search?q=${encodeURIComponent(q)}&filter=videos`, {signal: controller.signal});
+      clearTimeout(timer);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const items = (j.items || [])
+        .filter(v => v.url && (v.url.includes("watch?v=") || v.url.includes("/watch")))
+        .slice(0, 6);
+
+      if (items.length){
+        return items.map(v => {
+          const id = (v.url.split("v=")[1] || "").split("&")[0];
+          if (!id) return null;
+          return {
+            id,
+            t: v.title || "Untitled",
+            c: v.uploaderName || "YouTube",
+            thumb: v.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+            url: `https://www.youtube.com/watch?v=${id}`
+          };
+        }).filter(Boolean);
+      }
+    } catch(e){ /* try next instance */ }
+  }
+
+  const topics = buildFallbackTopics(query);
+  return topics.map(t => ({
+    noEmbed: true,
+    t: t,
+    c: "Open YouTube Search",
+    thumb: null,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(t)}`
+  }));
+}
+
+function buildFallbackTopics(query){
+  const q = query.toLowerCase();
+  if (/overheat|thermal|hot|temp/.test(q)) return ["PC overheating fix", "how to clean PC dust", "reapply thermal paste CPU"];
+  if (/slow|lag|sluggish|speed/.test(q)) return ["speed up Windows 11", "disable startup apps Windows", "Windows 11 optimization guide"];
+  if (/bsod|blue screen|crash/.test(q)) return ["fix blue screen error", "BSOD troubleshooting", "how to read minidump files"];
+  if (/fps|gaming|game|boost/.test(q)) return ["boost FPS in games", "PC gaming optimization", "enable DLSS FSR guide"];
+  if (/ssd|nvme|disk|storage/.test(q)) return ["SSD not detected fix", "install NVMe SSD", "enable TRIM Windows"];
+  if (/fan|noise|loud/.test(q)) return ["fix loud PC fan noise", "set custom fan curve", "stop coil whine GPU"];
+  if (/virus|malware|hijack/.test(q)) return ["remove virus from PC", "Malwarebytes full scan", "remove browser hijacker"];
+  if (/boot|startup|start/.test(q)) return ["speed up boot time", "enable fast boot BIOS", "fix Windows boot issues"];
+  if (/battery|laptop/.test(q)) return ["fix laptop battery drain", "battery health report Windows", "laptop power saving tips"];
+  if (/gpu|graphics|nvidia|amd/.test(q)) return ["update GPU drivers", "undervolt GPU MSI Afterburner", "DDU clean driver install"];
+  return ["PC repair tutorial", "PC optimization guide", "Windows 11 tips and tricks"];
+}
+
+/* ═══════════ MARKDOWN → HTML ═══════════ */
+function mdToHtml(md){
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  let h = esc(md);
+  h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
+  h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  h = h.replace(/^###\s+(.+)$/gm, "<h3>$1</h3>");
+  h = h.replace(/^\s*[-*]\s+(.+)$/gm, "<li>$1</li>");
+  h = h.replace(/^\s*(\d+)\.\s+(.+)$/gm, "<li>$2</li>");
+  h = h.replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, m => `<ul>${m}</ul>`);
+  h = h.split(/\n{2,}/).map(p => /^\s*<(h3|ul|ol|li)/.test(p) ? p : `<p>${p.replace(/\n/g,"<br>")}</p>`).join("");
+  return h;
+}
+
+/* ═══════════ DOM ═══════════ */
+const feed = document.getElementById("feed");
+const form = document.getElementById("searchForm");
+const input = document.getElementById("q");
+const goBtn = document.getElementById("goBtn");
+const dotsEl = document.getElementById("dots");
+
+/* ═══════════ LAZY-LOAD IFRAMES & FIX YOUTUBE ERRORS ═══════════ */
+const mediaObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    const m = e.target;
+    if (e.isIntersecting) {
+      if (!m.dataset.loaded && m.dataset.src) {
+        const f = document.createElement("iframe");
+        f.src = m.dataset.src;
+        f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+        f.allowFullscreen = true;
+        f.setAttribute("playsinline","");
+        f.setAttribute("referrerpolicy", "strict-origin-when-cross-origin"); 
+        
+        m.querySelector(".spinner")?.remove();
+        m.appendChild(f);
+        m.dataset.loaded = "1";
+        const p = m.querySelector(".poster");
+        if (p) { p.style.opacity = "0"; setTimeout(()=>p.remove(), 400); }
+
+        const warn = m.querySelector(".embed-warn");
+        if (warn){
+          const t = setTimeout(() => warn.classList.add("show"), 2000);
+          f.addEventListener("load", () => clearTimeout(t));
+        }
+      }
+    } else if (m.dataset.loaded) {
+      m.querySelector("iframe")?.remove();
+      if (!m.querySelector(".poster") && m.dataset.thumb) {
+        const img = document.createElement("img");
+        img.className = "poster"; img.src = m.dataset.thumb; img.alt = "";
+        m.prepend(img);
+      }
+      m.querySelector(".embed-warn")?.classList.remove("show");
+      delete m.dataset.loaded;
+    }
+  });
+}, {threshold:0.6, root:feed});
+
+const dotsObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const idx = [...feed.children].indexOf(e.target);
+    [...dotsEl.children].forEach((d,i)=>d.classList.toggle("on", i===idx));
+  });
+}, {threshold:0.6, root:feed});
+
+function buildDots(n){
+  dotsEl.innerHTML = "";
+  for (let i=0;i<n;i++) dotsEl.appendChild(document.createElement("i"));
+  dotsEl.firstChild?.classList.add("on");
+}
+
+/* ═══════════ BUILD REEL ═══════════ */
+function videoReel(v, i, total){
+  const sec = document.createElement("section");
+  sec.className = "reel";
+
+  if (v.noEmbed){
+    sec.innerHTML = `
+      <div class="media" style="background:radial-gradient(ellipse at 30% 20%,#1a0b1a,#0a000a)"></div>
+      <a class="play-overlay" href="${v.url}" target="_blank" rel="noopener">
+        <div class="play-btn">▶</div>
+        <div class="play-lbl">Search on YouTube</div>
+      </a>
+      <div class="info">
+        <div class="badge">${i+1} / ${total}</div>
+        <h2>${v.t}</h2>
+        <div class="meta"><b>${v.c}</b></div>
+      </div>
+      <div class="rail">
+        <a href="${v.url}" target="_blank" rel="noopener" title="Open on YouTube">▶</a>
+        <div class="lbl">Search</div>
+      </div>`;
+    return sec;
+  }
+
+  sec.innerHTML = `
+    <div class="media"
+         data-src="https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&loop=1&playlist=${v.id}&controls=1&rel=0&playsinline=1&modestbranding=1"
+         data-thumb="${v.thumb}">
+      <img class="poster" src="${v.thumb}" alt="" loading="lazy" decoding="async">
+      <a href="${v.url}" target="_blank" rel="noopener" style="position:absolute;inset:0;z-index:4;" title="Watch on YouTube"></a>
+      <div class="spinner"></div>
+      <div class="embed-warn">
+        <div>This video is blocked from embedding by its owner.</div>
+        <a href="${v.url}" target="_blank" rel="noopener">▶ Watch on YouTube</a>
+      </div>
+    </div>
+    <div class="tap-pause" data-tap><div>⏸</div></div>
+    <div class="heart-burst" data-heart>❤️</div>
+    <div class="info">
+      <div class="badge">${i+1} / ${total}</div>
+      <h2>${v.t}</h2>
+      <div class="meta"><b>${v.c}</b> · YouTube</div>
+    </div>
+    <div class="rail">
+      <button class="like" data-like title="Like">❤️</button>
+      <a href="${v.url}" target="_blank" rel="noopener" title="Watch on YouTube">▶</a>
+      <div class="lbl">Watch</div>
+    </div>`;
+  return sec;
+}
+
+/* ═══════════ RENDER ═══════════ */
+function render(summary, videos, query){
+  feed.innerHTML = "";
+  const s = document.createElement("section");
+  s.className = "reel summary-reel";
+  s.innerHTML = `
+    <div class="summary-card">
+      <div class="eyebrow">AI DIAGNOSIS</div>
+      <h1>${query.replace(/</g,"&lt;")}</h1>
+      <div class="md">${mdToHtml(summary)}</div>
+      <div class="scroll-hint">SWIPE DOWN FOR ${videos.length} VIDEOS ↑</div>
+    </div>`;
+  feed.appendChild(s);
+  videos.forEach((v,i) => feed.appendChild(videoReel(v, i, videos.length)));
+  feed.querySelectorAll(".media").forEach(m => mediaObserver.observe(m));
+  feed.querySelectorAll(".reel").forEach(r => dotsObserver.observe(r));
+  buildDots(feed.children.length);
+  feed.scrollTop = 0;
+}
+
+function showLoader(query){
+  feed.innerHTML = `<section class="reel loader-reel"><div class="spinner"></div><p>ANALYZING "${query.toUpperCase()}"…</p></section>`;
+  buildDots(1);
+}
+
+/* ═══════════ SEARCH FLOW ═══════════ */
+async function doSearch(query){
+  query = (query||"").trim();
+  if (!query) return;
+  goBtn.disabled = true; goBtn.textContent = "…";
+  showLoader(query);
+
+  try {
+    const hits = searchDocs(query, 3);
+    const [summary, videos] = await Promise.all([
+      aiSummarize(query, hits).catch(() =>
+        "**AI summarization unavailable** — showing knowledge base matches:\n\n" +
+        hits.map(d => `### ${d.t}\n${d.x}`).join("\n\n")
+      ),
+      searchVideos(query)
+    ]);
+    render(summary, videos, query);
+  } catch (err) {
+    feed.innerHTML = `<section class="reel empty"><div class="empty"><div class="ico">⚠️</div><h2>Something went wrong</h2><p>${err.message}</p></div></section>`;
+  } finally {
+    goBtn.disabled = false; goBtn.textContent = "SEARCH";
+  }
+}
+
+/* ═══════════ EVENTS ═══════════ */
+form.addEventListener("submit", e => { e.preventDefault(); doSearch(input.value); input.blur(); });
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  input.value = c.textContent; doSearch(c.textContent);
+}));
+
+/* ═══════════ GESTURES ═══════════ */
+let lastTap = 0;
+feed.addEventListener("click", e => {
+  const reel = e.target.closest(".reel");
+  if (!reel || reel.classList.contains("summary-reel")) return;
+  if (e.target.closest(".play-overlay")) return;
+  if (e.target.closest(".embed-warn a")) return;
+  if (e.target.closest(".like")) { toggleLike(e.target.closest(".like")); return; }
+  if (e.target.closest("a")) return;
+  const now = Date.now();
+  if (now - lastTap < 300) {
+    const heart = reel.querySelector("[data-heart]");
+    if (heart) { heart.classList.remove("go"); void heart.offsetWidth; heart.classList.add("go"); }
+    const likeBtn = reel.querySelector(".like");
+    if (likeBtn && !likeBtn.classList.contains("on")) toggleLike(likeBtn);
+    lastTap = 0;
+  } else {
+    lastTap = now;
+    const tp = reel.querySelector("[data-tap]");
+    if (tp) { tp.classList.add("on"); clearTimeout(tp._t); tp._t = setTimeout(()=>tp.classList.remove("on"), 550); }
+  }
+}, {passive:true});
+
+function toggleLike(b){
+  b.classList.toggle("on");
+  if (b.classList.contains("on")) {
+    b.style.background = "rgba(255,107,0,.95)";
+    b.style.borderColor = "var(--pumpkin)";
+    if (navigator.vibrate) navigator.vibrate(12);
+  } else { b.style.background = ""; b.style.borderColor = ""; }
+}
+
+/* ═══════════ BOTTOM NAV ═══════════ */
+document.querySelectorAll(".bottom-nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".bottom-nav button").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  const nav = b.dataset.nav;
+  if (nav === "home" || nav === "search") { feed.scrollTo({top:0,behavior:"smooth"}); input.focus(); }
+  if (nav === "trending") { input.value = "gaming FPS boost"; doSearch(input.value); }
+  if (nav === "saved") {
+    feed.innerHTML = `<section class="reel empty"><div class="empty"><div class="ico">🕸️</div><h2>No saved videos yet</h2><p>Tap the like icon on any video.</p></div></section>`;
+  }
+}));
+
+/* ═══════════ KEYBOARD ═══════════ */
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "PageDown") feed.scrollBy({top: window.innerHeight, behavior:"smooth"});
+  if (e.key === "ArrowUp" || e.key === "PageUp") feed.scrollBy({top: -window.innerHeight, behavior:"smooth"});
+});
+
+/* ═══════════ AUTO-LOAD ═══════════ */
+if (!sessionStorage.getItem("cf_visited")) {
+  sessionStorage.setItem("cf_visited","1");
+  input.value = "PC overheating fix";
+  doSearch(input.value);
+}
+</script>
+</body>
+</html>
